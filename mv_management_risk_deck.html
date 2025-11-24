@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>市值管理与异常交易风险 内部培训</title>
+  <style>
+    /* Base layout */
+    :root {
+      --bg: #f8f8fb;
+      --text: #1f2430;
+      --accent: #3056d3;
+      --muted: #5f6473;
+      --border: #d8dbe2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .deck {
+      width: 100%;
+      max-width: 1100px;
+      min-height: 520px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(31,36,48,0.08);
+      position: relative;
+      overflow: hidden;
+      padding: 24px 28px 80px 28px;
+    }
+    .slide {
+      display: none;
+      height: 100%;
+      animation: fadeIn 0.5s ease;
+    }
+    .slide.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 26px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    h3 { margin-bottom: 8px; color: var(--text); }
+    p { margin: 6px 0; color: var(--muted); }
+    ul { margin: 8px 0 12px 16px; color: var(--text); }
+    li { margin: 6px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th { background: #f2f3f8; }
+    .notes {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #f9fafc;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      color: #4b5162;
+      display: none;
+      line-height: 1.5;
+    }
+    .notes-toggle {
+      display: inline-block;
+      padding: 6px 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .btns {
+      position: absolute;
+      bottom: 18px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .btns button {
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+    .btns button:hover { background: #eef1fb; }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 8px 18px;
+      background: rgba(255,255,255,0.92);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      backdrop-filter: blur(4px);
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin: 10px 0;
+    }
+    .card {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fdfdff;
+    }
+    .card .label { color: var(--muted); font-size: 13px; }
+    .card .value { font-size: 20px; font-weight: 700; color: var(--text); }
+    .small-note { font-size: 12px; color: #b04747; }
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+    .matrix {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .matrix .cell {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fafbff;
+    }
+    .small-text { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>市值管理与异常交易风险（内部培训）</h1>
+  </header>
+  <main>
+    <div class="deck">
+      <!-- Slide 1 -->
+      <section class="slide active">
+        <h2>市值管理与异常交易风险</h2>
+        <p>——A股 / 港股 / 美股的结构差异、实务路径与量化识别框架</p>
+        <ul>
+          <li>适用对象：董事会成员、管理层、IR 团队、风控与合规人员。</li>
+        </ul>
+        <p class="small-text" style="text-align:right;">2025 年 XX 月｜内部资料，仅供学习交流，不构成任何投资或交易建议。</p>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          监管环境趋严、投资者结构变化，使得市值管理必须从“讲故事”进化到“讲结构 + 讲指标”。本培训旨在帮助管理层与合规团队以跨市场视角理解定价力量、风险边界与量化监控方法。
+        </div>
+      </section>
+      <!-- Slide 2 -->
+      <section class="slide">
+        <h2>不同市场是谁在定价？</h2>
+        <ul>
+          <li>A股：历史个人成交占比曾超 80%，近年约 50–60%；散户持股约 1/3，机构市值占比抬升。</li>
+          <li>港股：零售成交约 15–20%，机构在“投资者交易”中约 70%，海外资金权重高。</li>
+          <li>美股：资产管理机构为主，零售成交疫情后约 18–25%，机构盘与 ETF 仍主导价格形成。</li>
+        </ul>
+        <table>
+          <tr><th></th><th>A股</th><th>港股</th><th>美股</th></tr>
+          <tr><th>成交结构</th><td>机构约 40–50%，散户约 50–60%</td><td>零售 15–20%，机构/自营为主</td><td>零售 18–25%，机构 + ETF 为主</td></tr>
+          <tr><th>持股结构</th><td>散户约 1/3，机构市值占比高</td><td>海外机构 + 长线资金占比大</td><td>公募、养老金、保险等占多数</td></tr>
+          <tr><th>主要定价者</th><td>公募/险资/北向资金/游资</td><td>海外机构、南下资金、回购盘</td><td>资产管理机构、ETF、回购盘</td></tr>
+          <tr><th>典型风格</th><td>题材+政策预期</td><td>行业配置+股息</td><td>ROE+自由现金流+回购预期</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          “谁在定价”决定市值管理重点：A股受叙事与监管红线约束，港股重视机构覆盖度与股东结构，美股聚焦资产负债表与资本结构。后续所有手段与指标，都必须回到定价主导力量的差异上。
+        </div>
+      </section>
+      <!-- Slide 3 -->
+      <section class="slide">
+        <h2>市值管理：我们到底在管理什么？</h2>
+        <ul>
+          <li>基本面层：收入增速、利润率、ROE/ROIC、自由现金流、治理结构 → 内在价值。</li>
+          <li>资本运作层：回购、分红、股权激励、融资、并购重组/剥离 → 资本结构与股东回报。</li>
+          <li>二级市场层：信息披露节奏、IR 活动、流动性安排、投资者结构 → 价格表现/波动率/流动性。</li>
+        </ul>
+        <table>
+          <tr><th>层级</th><th>典型工具</th></tr>
+          <tr><td>基本面</td><td>经营改善、成本优化、治理提升</td></tr>
+          <tr><td>资本运作</td><td>回购/分红、股权激励、定增/并购/剥离</td></tr>
+          <tr><td>二级市场</td><td>路演/调研、信息节奏管理、流动性伙伴</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          市值管理是中性概念，关键在于信息真实、完整、非选择性披露，避免扭曲价格形成和侵害中小投资者。后续将按市场差异、时间维度、资金结构、信息节奏、异常交易指标展开。
+        </div>
+      </section>
+      <!-- Slide 4 -->
+      <section class="slide">
+        <h2>A股：散户主导市场的市值管理</h2>
+        <ul>
+          <li>个人成交占比历史可达 80%，近年约 50–60%，短期博弈色彩浓。</li>
+          <li>需兼顾政策预期、产业故事与监管红线，避免披露和交易踩线。</li>
+          <li>筹码碎片化，股东户数多，人均持股小，负面信息易引发踩踏。</li>
+        </ul>
+        <table>
+          <tr><th>合规动作</th><th>要点</th></tr>
+          <tr><td>高质量定期报告</td><td>充分风险提示，避免选择性披露</td></tr>
+          <tr><td>主动路演/调研</td><td>一致口径，及时回复核心疑问</td></tr>
+          <tr><td>适度分红/员工持股</td><td>提升预期稳定性与绑定度</td></tr>
+          <tr><td>规范并购重组</td><td>合规审查、穿透交易对手、信息同步</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          A股可用“板块 Beta + 公司 Alpha”框架：指数/主题提供 Beta，公司 ROE/成长率给出 Alpha。透明披露与预期管理可降低情绪波动与误解的放大效应，而非依赖短期二级市场操作。
+        </div>
+      </section>
+      <!-- Slide 5 -->
+      <section class="slide">
+        <h2>港股：机构+境外资金主导的市值管理</h2>
+        <ul>
+          <li>零售成交约 15–20%，机构与券商自营主导。</li>
+          <li>海外资金和长线机构是定价核心，同板块常仅 3–5 只“有主”标的。</li>
+          <li>南下资金偏好头部蓝筹与高股息，中小市值公司成交稀薄。</li>
+        </ul>
+        <table>
+          <tr><th>指标</th><th>含义/公式简述</th></tr>
+          <tr><td>Inst_Hold_Ratio</td><td>机构持股比例，衡量“有主”程度</td></tr>
+          <tr><td>Top10_Concentration</td><td>前十股东集中度，反映筹码集中</td></tr>
+          <tr><td>Breadth</td><td>上涨个股数 / 板块总数，反映板块广度</td></tr>
+          <tr><td>等权 vs 市值加权差</td><td>等权收益 - 市值加权收益，衡量小票相对表现</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          若机构与海外资金不愿当股东，港股市值管理难以成立。示例：板块指数涨 2%，Breadth 仅 20–30%，等权收益明显落后，说明小票难受益。实务聚焦：争取 anchor/cornerstone 机构、提升卖方覆盖、用配售/战投优化股东结构。
+        </div>
+      </section>
+      <!-- Slide 6 -->
+      <section class="slide">
+        <h2>美股：资本结构与回购驱动的市值管理</h2>
+        <ul>
+          <li>定价者：公募、养老金、保险、ETF、对冲基金等资产管理机构。</li>
+          <li>核心：ROE/ROIC、自由现金流、资本结构（杠杆）、股东回报政策（分红+回购）。</li>
+          <li>回购常与加杠杆、税收抵扣和 1% 回购税一并考量。</li>
+        </ul>
+        <table>
+          <tr><th>决策维度</th><th>指标</th><th>典型影响</th></tr>
+          <tr><td>盈利质量</td><td>ROE、ROIC、FCF Yield</td><td>决定回购/分红空间</td></tr>
+          <tr><td>杠杆水平</td><td>净负债/EBITDA、评级</td><td>决定借债能力与成本</td></tr>
+          <tr><td>估值水平</td><td>PE 分位、FCF Yield 分位</td><td>决定回购是否财务增厚</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          税后债务成本 r_d_after = (r_f + spread) × (1 - T)。盈利收益率 E/P = 1/PE。当 1/PE > r_d_after 时，借债回购在静态上增厚 EPS。示例：r_f=3.5%，spread=2%，税率 21% → 税后约 4.3–4.5%，等效 PE 约 22–23 倍。真实决策需再看业务风险、现金流稳定性与监管/税务。
+        </div>
+      </section>
+      <!-- Slide 7 -->
+      <section class="slide">
+        <h2>市值管理的时间维度：平时 vs 危机</h2>
+        <div class="two-col">
+          <div>
+            <h3>平时管理</h3>
+            <ul>
+              <li>设定估值带：如 5 年 PE 分位 30–70% 为合理区间。</li>
+              <li>设定流动性下限：日均成交额/换手率需达标，便于机构进出。</li>
+              <li>定期审视机构持股比例与股东集中度。</li>
+            </ul>
+          </div>
+          <div>
+            <h3>危机应对</h3>
+            <ul>
+              <li>质押比例过高、平仓线临近。</li>
+              <li>行业爆雷或板块重估。</li>
+              <li>重大负面事件或谣言，需快速、合规信息澄清。</li>
+            </ul>
+          </div>
+        </div>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          时间轴：平时监控 → 预警 → 危机爆发 → 缓释与善后。每阶段对应的信息披露、IR、资本动作均须合规与稳预期，而非“托盘”。
+        </div>
+      </section>
+      <!-- Slide 8 -->
+      <section class="slide">
+        <h2>案例：大股东股权质押风险的量化监控</h2>
+        <table>
+          <tr><th>指标</th><th>简要公式</th><th>风险含义</th></tr>
+          <tr><td>质押比例 Pledge_Ratio</td><td>质押股份 / 大股东持股</td><td>比例越高，安全垫越薄</td></tr>
+          <tr><td>质押占总股本</td><td>质押股份 / 总股本</td><td>比例高易形成流动性冲击</td></tr>
+          <tr><td>初始质押率 LTV0</td><td>贷款余额 / (质押股数 × 起始价)</td><td>越高，平仓压力越大</td></tr>
+          <tr><td>平仓线价格 P_margin</td><td>贷款余额 / (质押股数 × LTV_margin)</td><td>股价接近时易触发强平</td></tr>
+          <tr><td>安全边际 Safety_Buffer</td><td>(当前价 - P_margin)/当前价</td><td>越低，易因波动触发连锁抛压</td></tr>
+        </table>
+        <p class="small-note">安全边际过低时，市场波动可能引发“股价暴跌 → 平仓抛压 → 再暴跌”的连锁。</p>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          例：P0=10 元，质押 1 亿股，贷款 5 亿元，初始 LTV=50%；若平仓 LTV=80%，平仓价≈5 亿/(1 亿×0.8)=6.25 元。一旦股价跌到 6.25 左右，大股东被动平仓，若流动性有限，将产生严重冲击。市值管理目标：通过场外增信、协议转让、引战投等合规方式，避免质押链条断裂演变成踩踏，而非二级市场短线拉抬。
+        </div>
+      </section>
+      <!-- Slide 9 -->
+      <section class="slide">
+        <h2>谁来做市值管理？——资金与身份矩阵</h2>
+        <table>
+          <tr><th>主体</th><th>身份</th><th>可合规动作</th><th>监管关注点</th></tr>
+          <tr><td>上市公司</td><td>发行人</td><td>回购、分红、减债、并购</td><td>内幕期回购、信息不对称</td></tr>
+          <tr><td>控股股东/实控人</td><td>持股人</td><td>合规增持、场外增信、参与配股/定增</td><td>合谋操纵、内幕信息交易</td></tr>
+          <tr><td>友好机构/战投</td><td>长期伙伴</td><td>战投/定增、长期持股</td><td>对赌、保底收益、私下操盘安排</td></tr>
+          <tr><td>独立机构投资者</td><td>市场定价者</td><td>正常配置、长期持有</td><td>披露质量、估值合理性</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          目标是让第四类长期资金逐步进入，而非长期依赖前几类主体做短线动作。结构良好的股权与资金来源能降低市值管理难度。
+        </div>
+      </section>
+      <!-- Slide 10 -->
+      <section class="slide">
+        <h2>信息节奏：什么时候用何种市值管理手段？</h2>
+        <table>
+          <tr><th>条件</th><th>建议优先动作</th></tr>
+          <tr><td>股价显著低于内在价值，财务健康</td><td>回购 + 强化中长期指引 + 主动机构沟通</td></tr>
+          <tr><td>盈利稳定，项目机会有限</td><td>提高分红率/特别分红，稳定股息政策</td></tr>
+          <tr><td>行业整合期且具备整合能力</td><td>审慎并购/资产注入，强调整合能力与财务纪律</td></tr>
+          <tr><td>大股东质押接近平仓线</td><td>优先场外解决/展期/引战投；必要时回购或停牌核查，但需有实质事项</td></tr>
+          <tr><td>股价被短期炒高，高换手高情绪</td><td>IR 口径谨慎，强调风险，避免在高估区做易被误读的动作</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          市值管理并非“跌就拉、涨就压”，而是在不同条件下选择正确工具，避免错误时点释放错误信号。
+        </div>
+      </section>
+      <!-- Slide 11 -->
+      <section class="slide">
+        <h2>异常交易与操纵风险：行为标签（监管视角）</h2>
+        <ul>
+          <li>短期集中拉抬出货：短期推高后在高位向公众投资者减持。</li>
+          <li>对倒与自买自卖：控制账户互成交，虚增成交与活跃度。</li>
+          <li>虚假申报/堆单撤单：关键价位大量挂单后快速撤单，制造虚假意愿。</li>
+          <li>尾盘拉抬/打压：收盘前短时间显著改变收盘价。</li>
+          <li>信息配合交易：利用虚假、误导性或未公开重要信息配合异常节奏。</li>
+        </ul>
+        <p class="small-note">以上标签来自公开处罚案例的抽象，用于识别风险边界，不是操作指南。</p>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          监管通过账户关系、资金流向、交易行为模式等综合识别上述模式，并结合异常指标与证据链判定是否构成操纵。企业理解这些标签，是为避免与有违法倾向的资金合作，而非学习其方式。
+        </div>
+      </section>
+      <!-- Slide 12 -->
+      <section class="slide">
+        <h2>异常价格与成交行为：量化监控指标（价格侧）</h2>
+        <table>
+          <tr><th>指标</th><th>简要公式</th><th>预警含义</th></tr>
+          <tr><td>相对指数超额收益</td><td>AR_t = 个股收益 - 基准收益</td><td>与大盘显著背离的交易日</td></tr>
+          <tr><td>相对行业超额收益</td><td>个股收益 - 行业中位数</td><td>与同行显著偏离</td></tr>
+          <tr><td>涨跌幅 Z-score</td><td>(日涨跌 - 均值)/标准差</td><td>超出历史分布的波动</td></tr>
+          <tr><td>量比</td><td>当日成交量/过去 N 日均量</td><td>成交激增或骤降</td></tr>
+          <tr><td>换手率倍数</td><td>当日换手率/过去 N 日均值</td><td>筹码快速换手</td></tr>
+          <tr><td>盘中 5/10 分钟波动</td><td>短窗最大涨跌或高低差</td><td>盘中异常拉抬/打压</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          多指标同时偏离时标记为高关注时段，由合规/风控进一步人工分析。单一阈值不应作为自动判定依据。
+        </div>
+      </section>
+      <!-- Slide 13 -->
+      <section class="slide">
+        <h2>集中度 / 对倒交易 / 虚假申报的监控指标</h2>
+        <h3>账户集中度类</h3>
+        <table>
+          <tr><th>指标</th><th>偏高时含义</th></tr>
+          <tr><td>最大账户成交占比</td><td>单一账户主导成交，需核查关联</td></tr>
+          <tr><td>前三/前五账户占比</td><td>集中交易易形成价格操控风险</td></tr>
+          <tr><td>成交集中度 HHI</td><td>集中度高提示“有组织”交易可能</td></tr>
+          <tr><td>账户组净买入占比</td><td>账户组可能在推升/压低价格</td></tr>
+        </table>
+        <h3>订单行为类</h3>
+        <table>
+          <tr><th>指标</th><th>说明</th></tr>
+          <tr><td>全日撤单率</td><td>撤单率持续偏高可能虚假申报</td></tr>
+          <tr><td>快速撤单率</td><td>极短时间撤单高，疑似诱导行情</td></tr>
+          <tr><td>涨停/跌停挂单比例</td><td>关键价位堆单影响价格信号</td></tr>
+          <tr><td>涨停/跌停 Fake Ratio</td><td>撤单量/新挂单量高，虚假意愿信号</td></tr>
+          <tr><td>尾盘 15 分钟收益与成交</td><td>尾盘异常收益+成交提示收盘价操纵</td></tr>
+        </table>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          指标用途：1) 建立异常交易日/账户的排查清单；2) 在调查时作为佐证，而非单独决定性依据。
+        </div>
+      </section>
+      <!-- Slide 14 -->
+      <section class="slide">
+        <h2>从单一指标到综合异常交易风险评分</h2>
+        <ul>
+          <li>按价格、成交、集中度、订单行为四维度分类指标。</li>
+          <li>每维度标准化打分（正常/预警/高风险）。</li>
+          <li>加权合成每日、每股的风险分数，设定进入合规复核池的阈值。</li>
+          <li>评分仅用于合规与风控预警，不作交易信号。</li>
+        </ul>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          例：某日某股价格 3/5，成交 4/5，集中度 5/5，订单 4/5，总分 16/20 → 高优先级排查。合规需结合公告、行业、股东行为等再判断，不自动认定违法。
+        </div>
+      </section>
+      <!-- Slide 15 -->
+      <section class="slide">
+        <h2>市值管理 + 风险监控：如何协同？</h2>
+        <ul>
+          <li>设计回购、分红、激励、并购时同步评估对异常指标的影响。</li>
+          <li>IR/管理层需理解异常指标含义，避免被误判为高风险行为。</li>
+          <li>合规/风控建立例行报告，跟踪市值管理期间指标是否正常。</li>
+          <li>与券商/投行合作时，明确禁止收益对赌、价格对赌、协同行为操纵。</li>
+          <li>用公开处罚案例做反面教材，持续培训关键岗位。</li>
+        </ul>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          可持续的市值管理需兼顾基本面、资本运作与合规底线。真正的“高手”是在监管框架内，用结构和指标把市值锚定在合理健康区间。
+        </div>
+      </section>
+      <!-- Slide 16 -->
+      <section class="slide">
+        <h2>总结：市值管理的抓手与底线</h2>
+        <ul>
+          <li>不同市场定价者不同：A股偏叙事与监管，港股偏机构结构，美股偏资本结构与回购策略。</li>
+          <li>合规市值管理需定性+定量：估值分位、流动性、股东结构、回购/分红政策等。</li>
+          <li>异常交易风险可用价格、成交、集中度、订单指标识别，但需证据链与监管判断。</li>
+          <li>关于操纵市场的讨论均基于处罚案例反面教材，旨在划清红线、提升自律。</li>
+        </ul>
+        <p class="small-text">本材料仅用于内部学习交流，不构成任何投资、法律或交易建议，更不构成任何形式的操纵市场指南。</p>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          鼓励将市值管理视为长期工程，始终把合规与中小投资者保护放在首位。
+        </div>
+      </section>
+      <!-- Slide 17 -->
+      <section class="slide">
+        <h2>A股质押危机小案例</h2>
+        <p>假设：质押比例高，质押股数占总股本比重大，股价从 10 元逼近平仓线。</p>
+        <table>
+          <tr><th>日期</th><th>价格</th><th>量比</th><th>换手率</th><th>Safety_Buffer</th></tr>
+          <tr><td>T-5</td><td>10.0</td><td>0.9</td><td>1.2%</td><td>38%</td></tr>
+          <tr><td>T-3</td><td>9.2</td><td>1.1</td><td>1.4%</td><td>28%</td></tr>
+          <tr><td>T-1</td><td>8.0</td><td>1.6</td><td>2.1%</td><td>12%</td></tr>
+          <tr><td>T</td><td>6.6</td><td>2.8</td><td>3.5%</td><td>5%</td></tr>
+          <tr><td>T+1</td><td>6.3</td><td>3.1</td><td>4.0%</td><td>2%</td></tr>
+          <tr><td>T+3</td><td>6.1</td><td>2.4</td><td>3.2%</td><td>1%</td></tr>
+          <tr><td>T+5</td><td>6.0</td><td>2.0</td><td>2.8%</td><td>0%</td></tr>
+        </table>
+        <ul>
+          <li>可做：及早披露质押比例与平仓线区间，主动沟通增信/展期/战投；若有真实事项可启动停牌核查。</li>
+          <li>不可做：缺乏信息披露支撑的二级市场短线拉抬；任何形式的对赌或暗盘操纵。</li>
+          <li>T 时刻若平仓线临近，应优先场外方案，回购需结合信息披露与资金合规性。</li>
+        </ul>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          小案例强调：质押危机应以信息透明、外部增信、协议转让或战投方式化解，避免踩踏。任何二级市场短线“托盘”不仅风险高，也难以持续。
+        </div>
+      </section>
+      <!-- Slide 18 -->
+      <section class="slide">
+        <h2>港股有主 vs 无主的板块对比</h2>
+        <table>
+          <tr><th></th><th>公司 A（有主）</th><th>公司 B（无主）</th></tr>
+          <tr><th>Inst_Hold_Ratio</th><td>65%</td><td>18%</td></tr>
+          <tr><th>Top10 Concentration</th><td>55%</td><td>85%</td></tr>
+          <tr><th>流动性</th><td>日均成交 3% 换手</td><td>日均成交 0.3% 换手</td></tr>
+          <tr><th>卖方覆盖</th><td>8–10 家券商</td><td>2–3 家券商</td></tr>
+        </table>
+        <ul>
+          <li>公司 A 重点：保持机构覆盖、稳定分红/回购、与指数/ETF 联动沟通。</li>
+          <li>公司 B 重点：提升披露质量，争取 anchor 机构、配售/战投改善股东结构，避免高波动事件。</li>
+        </ul>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          同板块中“有主”与“无主”差异巨大：有主公司市值管理围绕长期资金关系维护；无主公司需先解决股东结构与流动性，再谈估值提升。
+        </div>
+      </section>
+      <!-- Slide 19 -->
+      <section class="slide">
+        <h2>市值管理监控看板 Demo（静态假数据）</h2>
+        <div class="card-grid" id="kpi-cards"></div>
+        <table>
+          <tr><th>日期</th><th>涨跌幅</th><th>量比</th><th>换手率</th><th>AR</th><th>集中度</th><th>风险标记</th></tr>
+          <tbody id="monitor-table"></tbody>
+        </table>
+        <p class="small-text">示意数据，仅供培训演示，不代表任何真实公司。</p>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          假数据看板展示将价格、成交、集中度等指标放在同一页面，便于 IR/合规快速识别异常交易日，并形成复核清单。
+        </div>
+      </section>
+      <!-- Slide 20 -->
+      <section class="slide">
+        <h2>质押风险 Quick Calculator</h2>
+        <form id="pledge-form">
+          <div class="two-col">
+            <label>当前股价 P0（元）<br><input type="number" step="0.01" id="price" value="10"></label>
+            <label>质押股数 Q（股）<br><input type="number" step="1000" id="shares" value="100000000"></label>
+            <label>贷款余额 L（元）<br><input type="number" step="1000000" id="loan" value="500000000"></label>
+            <label>平仓 LTV（如 0.8）<br><input type="number" step="0.01" id="ltv" value="0.8"></label>
+          </div>
+          <button type="submit" class="notes-toggle" style="margin-top:10px;">计算</button>
+        </form>
+        <div id="calc-result" class="card" style="margin-top:12px;"></div>
+        <p class="small-text">示意计算，不构成任何投资或融资建议。</p>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          通过简单输入即可估算初始 LTV、平仓价与安全边际，帮助管理层判断是否需启动增信或其他合规动作。结果仅为示意，实际需结合合同条款、交易对手与市场流动性评估。
+        </div>
+      </section>
+      <!-- Slide 21 -->
+      <section class="slide">
+        <h2>组织与流程：市值管理内控框架</h2>
+        <table>
+          <tr><th>角色</th><th>职责</th></tr>
+          <tr><td>董事会</td><td>制定回购/分红/激励政策，监督合规底线</td></tr>
+          <tr><td>管理层/CEO</td><td>统筹市值管理策略与资源</td></tr>
+          <tr><td>CFO</td><td>资本结构、融资/回购/分红测算</td></tr>
+          <tr><td>IR</td><td>信息披露、路演沟通、一致口径管理</td></tr>
+          <tr><td>合规/法务</td><td>内幕期审查、信息同步、合同审阅</td></tr>
+          <tr><td>风险</td><td>监控异常交易指标、预警与复核</td></tr>
+        </table>
+        <ul>
+          <li>周期性会议：季度市值/流动性评估会；重大事件前后快速合规评审。</li>
+          <li>例行报告：月度市值指标 + 异常交易监测简报；关键事件的专项合规备忘录。</li>
+        </ul>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          明确角色分工与例行机制，可减少信息不对称和误判，提升市值管理决策的可追溯性与合规性。
+        </div>
+      </section>
+      <!-- Slide 22 -->
+      <section class="slide">
+        <h2>公司类型 / 生命周期矩阵</h2>
+        <div class="matrix">
+          <div class="cell"><strong>早期×高增长</strong><br>讲清商业模式与护城河；争取核心机构股东；谨慎融资稀释。</div>
+          <div class="cell"><strong>早期×高分红</strong><br>少见，聚焦现金流透明度；股息可作为估值锚。</div>
+          <div class="cell"><strong>早期×周期性</strong><br>强调成本弹性与周期底部安全边际。</div>
+          <div class="cell"><strong>成熟×高增长</strong><br>平衡再投资与分红/回购；加强机构覆盖。</div>
+          <div class="cell"><strong>成熟×高分红</strong><br>稳定分红政策，优化税务与回购组合。</div>
+          <div class="cell"><strong>成熟×周期性</strong><br>库存与资本开支节奏披露，防止周期顶部误判。</div>
+          <div class="cell"><strong>转型×高增长</strong><br>披露转型里程碑，控制融资成本，避免过度承诺。</div>
+          <div class="cell"><strong>转型×高分红</strong><br>边转型边维持股息锚，明确资本开支优先级。</div>
+          <div class="cell"><strong>转型×周期性</strong><br>突出风险缓释措施与现金流保守方案。</div>
+        </div>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          不同生命周期与类型的市值管理重点不同：高增长关注叙事验证与资本效率，高分红关注现金回报与稳定性，周期性关注安全边际与波动管理。
+        </div>
+      </section>
+      <!-- Slide 23 -->
+      <section class="slide">
+        <h2>红线与常见误判清单</h2>
+        <h3>红线不要碰</h3>
+        <ul>
+          <li>与外部资金约定隐性保底收益或价格对赌。</li>
+          <li>未披露重大信息前的交易或指示他人交易。</li>
+          <li>对倒、自买自卖、虚假申报、尾盘操纵收盘价。</li>
+          <li>选择性披露、误导性陈述或刻意模糊风险。</li>
+          <li>内幕期回购、借信息优势侵害中小投资者。</li>
+          <li>利用关联账户联合操纵或利益输送。</li>
+        </ul>
+        <h3>常见误判</h3>
+        <ul>
+          <li>高估区间仍激进回购或并购，传递错误信号。</li>
+          <li>过度依赖故事营销，忽视兑现与数据。</li>
+          <li>忽视流动性下限，导致机构无法进出。</li>
+          <li>把异常交易指标当作“操盘手册”，忽略合规边界。</li>
+          <li>忽视股东结构风险（高度质押/集中）。</li>
+          <li>关键公告时点口径不一致，引发信任危机。</li>
+        </ul>
+        <button class="notes-toggle" onclick="toggleNotes(this)">显示讲稿</button>
+        <div class="notes">
+          红线与误判清单帮助内部团队自查与纠偏，确保市值管理在合规与投资者保护框架内进行。
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer>
+    <div>第 <span id="page-num">1</span> / <span id="page-total">23</span> 页</div>
+    <div class="btns">
+      <button id="prev">上一页</button>
+      <button id="next">下一页</button>
+    </div>
+  </footer>
+  <script>
+    // Basic slide navigation
+    var slides = document.querySelectorAll('.slide');
+    var current = 0;
+    var total = slides.length;
+    document.getElementById('page-total').textContent = total;
+
+    function showSlide(idx) {
+      if (idx < 0 || idx >= total) { return; }
+      slides[current].classList.remove('active');
+      current = idx;
+      slides[current].classList.add('active');
+      document.getElementById('page-num').textContent = current + 1;
+    }
+
+    document.getElementById('prev').onclick = function() {
+      if (current > 0) { showSlide(current - 1); }
+    };
+    document.getElementById('next').onclick = function() {
+      if (current < total - 1) { showSlide(current + 1); }
+    };
+
+    function toggleNotes(btn) {
+      var notes = btn.nextElementSibling;
+      if (!notes) { return; }
+      if (notes.style.display === 'block') {
+        notes.style.display = 'none';
+        btn.textContent = '显示讲稿';
+      } else {
+        notes.style.display = 'block';
+        btn.textContent = '隐藏讲稿';
+      }
+    }
+
+    // Populate demo dashboard data for slide 19
+    var kpiData = [
+      { label: 'PE (5 年分位)', value: '18.2x｜35%' },
+      { label: '日均成交/流通市值', value: '0.45%' },
+      { label: '机构持股比例', value: '42%' },
+      { label: '股东户数（3月趋势）', value: '下降 4%' }
+    ];
+    var kpiContainer = document.getElementById('kpi-cards');
+    if (kpiContainer) {
+      for (var i = 0; i < kpiData.length; i++) {
+        var card = document.createElement('div');
+        card.className = 'card';
+        var label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = kpiData[i].label;
+        var value = document.createElement('div');
+        value.className = 'value';
+        value.textContent = kpiData[i].value;
+        card.appendChild(label);
+        card.appendChild(value);
+        kpiContainer.appendChild(card);
+      }
+    }
+
+    var monitorData = [
+      { date: 'T-9', ret: '-0.5%', vr: '0.9', to: '0.8%', ar: '-0.2%', con: '0.18', flag: '正常' },
+      { date: 'T-8', ret: '1.2%', vr: '1.3', to: '1.0%', ar: '0.6%', con: '0.20', flag: '正常' },
+      { date: 'T-7', ret: '3.5%', vr: '2.1', to: '2.4%', ar: '2.8%', con: '0.33', flag: '预警' },
+      { date: 'T-6', ret: '-1.0%', vr: '1.1', to: '1.1%', ar: '-0.4%', con: '0.22', flag: '正常' },
+      { date: 'T-5', ret: '4.2%', vr: '2.8', to: '3.0%', ar: '3.6%', con: '0.38', flag: '高风险' },
+      { date: 'T-4', ret: '0.8%', vr: '1.4', to: '1.3%', ar: '0.5%', con: '0.25', flag: '正常' },
+      { date: 'T-3', ret: '-0.2%', vr: '1.0', to: '1.0%', ar: '-0.1%', con: '0.21', flag: '正常' },
+      { date: 'T-2', ret: '2.8%', vr: '1.9', to: '2.0%', ar: '1.9%', con: '0.29', flag: '预警' },
+      { date: 'T-1', ret: '3.9%', vr: '2.5', to: '2.8%', ar: '3.0%', con: '0.35', flag: '高风险' },
+      { date: 'T', ret: '-0.6%', vr: '1.6', to: '1.4%', ar: '-0.4%', con: '0.26', flag: '正常' }
+    ];
+    var monitorBody = document.getElementById('monitor-table');
+    if (monitorBody) {
+      for (var j = 0; j < monitorData.length; j++) {
+        var tr = document.createElement('tr');
+        var row = monitorData[j];
+        var fields = ['date', 'ret', 'vr', 'to', 'ar', 'con', 'flag'];
+        for (var k = 0; k < fields.length; k++) {
+          var td = document.createElement('td');
+          td.textContent = row[fields[k]];
+          tr.appendChild(td);
+        }
+        monitorBody.appendChild(tr);
+      }
+    }
+
+    // Pledge calculator logic for slide 20
+    function calcPledge(event) {
+      if (event) { event.preventDefault(); }
+      var P0 = parseFloat(document.getElementById('price').value || 0);
+      var Q = parseFloat(document.getElementById('shares').value || 0);
+      var L = parseFloat(document.getElementById('loan').value || 0);
+      var LTVm = parseFloat(document.getElementById('ltv').value || 0.8);
+      if (!P0 || !Q || !L || !LTVm) { return; }
+      var LTV0 = L / (Q * P0);
+      var Pmargin = L / (Q * LTVm);
+      var buffer = (P0 - Pmargin) / P0;
+      var box = document.getElementById('calc-result');
+      box.innerHTML = '<div class="label">初始 LTV</div><div class="value">' + (LTV0 * 100).toFixed(2) + '%</div>' +
+        '<div class="label">平仓线价格</div><div class="value">' + Pmargin.toFixed(2) + ' 元</div>' +
+        '<div class="label">安全边际</div><div class="value">' + (buffer * 100).toFixed(2) + '%</div>' +
+        '<div class="small-text">若安全边际过低，应优先场外增信/展期/战投等合规方式缓释，而非短线拉抬。</div>';
+    }
+    var form = document.getElementById('pledge-form');
+    if (form) { form.addEventListener('submit', calcPledge); }
+    calcPledge();
+  </script>
+</body>
+</html>
